@@ -1,0 +1,470 @@
+@namespace
+class SpriteKind:
+    DirectionDown = SpriteKind.create()
+    DirectionLeft = SpriteKind.create()
+    DirectionRight = SpriteKind.create()
+    End = SpriteKind.create()
+    Tower = SpriteKind.create()
+
+def on_on_overlap(sprite, otherSprite):
+    sprite.destroy()
+    if True:
+        info.change_life_by(-2)
+    scene.camera_shake(4, 500)
+sprites.on_overlap(SpriteKind.enemy, SpriteKind.End, on_on_overlap)
+
+def on_on_overlap2(sprite2, otherSprite2):
+    sprite2.set_velocity(15 * sprites.read_data_number(sprite2, "wave spawned on") * -1,
+        0)
+sprites.on_overlap(SpriteKind.enemy, SpriteKind.DirectionLeft, on_on_overlap2)
+
+def on_a_pressed():
+    global Overlap, LastTower
+    if Cursor.tile_kind_at(TileDirection.CENTER, assets.tile("""
+        tile1
+    """)) or Cursor.tile_kind_at(TileDirection.CENTER, sprites.castle.tile_grass1) or (Cursor.tile_kind_at(TileDirection.CENTER, sprites.castle.tile_grass3) or Cursor.tile_kind_at(TileDirection.CENTER, sprites.castle.tile_grass2)):
+        for Value in Towers:
+            Overlap = Cursor.overlaps_with(Value)
+        if not (Overlap):
+            if info.score() >= 50:
+                info.change_score_by(-50)
+                LastTower = sprites.create(img("""
+                    ........................
+                    .....ffff...............
+                    ...fff22fff.............
+                    ..fff2222fff............
+                    .fffeeeeeefff...........
+                    .ffe222222eef...........
+                    .fe2ffffff2ef...........
+                    .ffffeeeeffff...........
+                    ffefbf44fbfeff..........
+                    fee41fddf14eef..........
+                    .ffffdddddeef...........
+                    fddddf444eef............
+                    fbbbbf2222f4e...........
+                    fbbbbf2222fd4...........
+                    .fccf45544f44...........
+                    ..ffffffff..............
+                    ....ff..ff..............
+                    ........................
+                    ........................
+                    ........................
+                    ........................
+                    ........................
+                    ........................
+                    ........................
+                """),
+                    SpriteKind.Tower)
+                Towers.append(LastTower)
+                LastTower.set_position(Cursor.x, Cursor.y)
+                LastTower.z = 0
+            else:
+                Cursor.say("No money left!", 1000)
+    else:
+        Cursor.say("Not a valid spot!", 1000)
+controller.A.on_event(ControllerButtonEvent.PRESSED, on_a_pressed)
+
+def on_on_overlap3(sprite3, otherSprite3):
+    spritelives.change_life_by(sprite3, -1)
+    otherSprite3.destroy()
+sprites.on_overlap(SpriteKind.enemy, SpriteKind.projectile, on_on_overlap3)
+
+def ScreenSay(Text: str):
+    OnScreenNarrator.right = scene.camera_left()
+    OnScreenNarrator.vx = 50
+    OnScreenNarrator.say(Text)
+
+def on_countdown_end():
+    global Waiting, BloonsSpawned
+    if Waiting:
+        Waiting = False
+        
+        def on_after():
+            info.start_countdown(10 * Wave)
+            ScreenSay("Start of wave " + str(Wave))
+        timer.after(500, on_after)
+        
+        console.log_value("wave", Wave)
+        BloonsSpawned = 0
+    else:
+        Waiting = True
+        ScreenSay("End of wave " + str(Wave))
+        
+        def on_after2():
+            global Wave
+            Wave += 1
+            info.start_countdown(15)
+        timer.after(500, on_after2)
+        
+info.on_countdown_end(on_countdown_end)
+
+def on_on_overlap4(sprite4, otherSprite4):
+    if controller.B.is_pressed():
+        Towers.remove_at(Towers.index(otherSprite4)).destroy()
+        info.change_score_by(30)
+sprites.on_overlap(SpriteKind.player, SpriteKind.Tower, on_on_overlap4)
+
+def on_on_overlap5(sprite5, otherSprite5):
+    sprite5.set_velocity(15 * sprites.read_data_number(sprite5, "wave spawned on"), 0)
+sprites.on_overlap(SpriteKind.enemy, SpriteKind.DirectionRight, on_on_overlap5)
+
+def on_on_overlap6(sprite6, otherSprite6):
+    sprite6.set_velocity(0, 15 * sprites.read_data_number(sprite6, "wave spawned on"))
+sprites.on_overlap(SpriteKind.enemy, SpriteKind.DirectionDown, on_on_overlap6)
+
+def on_life_zero(sprite7):
+    global Dump
+    Dump = Bloons.remove_at(Bloons.index(sprite7))
+    sprite7.destroy()
+    info.change_score_by(1)
+spritelives.on_life_zero(SpriteKind.enemy, on_life_zero)
+
+def on_hit_wall(sprite8, undefined):
+    sprite8.destroy()
+scene.on_hit_wall(SpriteKind.projectile, on_hit_wall)
+
+Dart: Sprite = None
+ClosestBloon: Sprite = None
+Distance = 0
+ClosestDistance = 0
+LastBloon: Sprite = None
+Dump: Sprite = None
+LastTower: Sprite = None
+Overlap = False
+BloonsSpawned = 0
+Wave = 0
+Waiting = False
+Bloons: List[Sprite] = []
+Towers: List[Sprite] = []
+OnScreenNarrator: Sprite = None
+Cursor: Sprite = None
+Cursor = sprites.create(img("""
+        f f . . . . . . 
+            f 1 f . . . . . 
+            f 1 1 f . . . . 
+            f 1 1 1 f . . . 
+            f 1 1 1 1 f . . 
+            f 1 1 1 1 1 f . 
+            f 1 1 1 1 f f f 
+            f 1 f f 1 f . . 
+            f f . f 1 f . . 
+            f . . . f 1 f . 
+            . . . . f 1 f . 
+            . . . . . f 1 f 
+            . . . . . f 1 f 
+            . . . . . . f .
+    """),
+    SpriteKind.player)
+Cursor.set_flag(SpriteFlag.STAY_IN_SCREEN, True)
+Cursor.set_flag(SpriteFlag.SHOW_PHYSICS, False)
+Cursor.z = 10000
+controller.move_sprite(Cursor, 100, 100)
+scene.camera_follow_sprite(Cursor)
+OnScreenNarrator = sprites.create(img("""
+    .
+"""), SpriteKind.player)
+OnScreenNarrator.set_flag(SpriteFlag.RELATIVE_TO_CAMERA, True)
+Towers = sprites.all_of_kind(SpriteKind.Tower)
+Bloons = sprites.all_of_kind(SpriteKind.enemy)
+Downs = sprites.all_of_kind(SpriteKind.DirectionDown)
+Lefts = sprites.all_of_kind(SpriteKind.DirectionLeft)
+Rights = sprites.all_of_kind(SpriteKind.DirectionRight)
+Rights.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionRight))
+Rights[0].set_position(36, 42)
+Downs.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionDown))
+Downs[0].set_position(232, 36)
+Lefts.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionLeft))
+Lefts[0].set_position(225, 88)
+Downs.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionDown))
+Downs[1].set_position(24, 88)
+Rights.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionRight))
+Rights[1].set_position(36, 188)
+Downs.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionDown))
+Downs[2].set_position(232, 180)
+Lefts.append(sprites.create(img("""
+            3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 
+                3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+        """),
+        SpriteKind.DirectionLeft))
+Lefts[1].set_position(225, 230)
+for Value2 in Downs:
+    Value2.set_flag(SpriteFlag.INVISIBLE, True)
+for Value3 in Lefts:
+    Value3.set_flag(SpriteFlag.INVISIBLE, True)
+for Value4 in Rights:
+    Value4.set_flag(SpriteFlag.INVISIBLE, True)
+EndOfMap = sprites.create(img("""
+        3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3 
+            3 3 3 3 3 3 3 3
+    """),
+    SpriteKind.End)
+EndOfMap.set_position(4, 227)
+EndOfMap.set_flag(SpriteFlag.INVISIBLE, True)
+scene.set_background_color(7)
+tiles.set_tilemap(tilemap("""
+    level2
+"""))
+info.set_life(100)
+info.set_score(100)
+MonkeyFlipped = img("""
+    . . . . f f f f f . . . . . . . 
+        . . . f e e e e e f . . . . . . 
+        . . f d d d d e e e f . . . . . 
+        . c d f d d f d e e f f . . . . 
+        . c d f d d f d e e d d f . . . 
+        c d e e d d d d e e b d c . . . 
+        c d d d d c d d e e b d c . f f 
+        c c c c c d d d e e f c . f e f 
+        . f d d d d d e e f f . . f e f 
+        . . f f f f f e e e e f . f e f 
+        . . . . f e e e e e e e f f e f 
+        . . . f e f f e f e e e e f f . 
+        . . . f e f f e f e e e e f . . 
+        . . . f d b f d b f f e f . . . 
+        . . . f d d c d d b b d f . . . 
+        . . . . f f f f f f f f f . . .
+""")
+MonkeyFlipped.flip_x()
+Waiting = True
+Wave = 1
+BloonsSpawned = 0
+info.start_countdown(15)
+
+def on_on_update():
+    if not (Waiting):
+        
+        def on_throttle():
+            Index = 0
+            while Index <= Wave:
+                
+                def on_after3():
+                    global LastBloon, BloonsSpawned
+                    LastBloon = sprites.create(img("""
+                            . . . . . . 2 2 2 . . . . . . . 
+                                                    . . . . . 2 2 2 2 2 . . . . . . 
+                                                    . . . . 2 2 2 2 2 2 2 . . . . . 
+                                                    . . . . 2 2 2 2 2 2 2 . . . . . 
+                                                    . . . . 2 2 2 2 2 2 2 . . . . . 
+                                                    . . . . 2 2 2 2 2 2 2 . . . . . 
+                                                    . . . . 2 2 2 2 2 2 2 . . . . . 
+                                                    . . . . . 2 2 2 2 2 . . . . . . 
+                                                    . . . . . . 2 2 2 . . . . . . . 
+                                                    . . . . . . . f . . . . . . . . 
+                                                    . . . . . . . f . . . . . . . . 
+                                                    . . . . . . . . f . . . . . . . 
+                                                    . . . . . . . . f . . . . . . . 
+                                                    . . . . . . . f . . . . . . . . 
+                                                    . . . . . . . f . . . . . . . . 
+                                                    . . . . . . . f . . . . . . . .
+                        """),
+                        SpriteKind.enemy)
+                    spritelives.set_sprite_life(LastBloon, 3)
+                    Bloons.append(LastBloon)
+                    sprites.set_data_number(LastBloon, "wave spawned on", min(Wave, 6 + 2 / 3))
+                    LastBloon.set_position(32, 0)
+                    LastBloon.set_velocity(0,
+                        15 * sprites.read_data_number(LastBloon, "wave spawned on"))
+                    BloonsSpawned += 1
+                timer.after((1000 - (Wave - 1) * 25) / Wave * Index, on_after3)
+                
+                Index += 1
+            console.log_value("bloons spawned", BloonsSpawned)
+        timer.throttle("spawn bloon", 1000 - (Wave - 1) * 25, on_throttle)
+        
+game.on_update(on_on_update)
+
+def on_update_interval():
+    info.change_score_by(25)
+game.on_update_interval(5000, on_update_interval)
+
+def on_forever():
+    OnScreenNarrator.y = scene.screen_height() / 2 + scene.camera_top()
+forever(on_forever)
+
+def on_update_interval2():
+    global ClosestDistance, Distance, ClosestBloon, Dart
+    for Value5 in Towers:
+        if len(Bloons) > 0:
+            ClosestDistance = 99999
+            for Bloon in Bloons:
+                Distance = Math.sqrt((Bloon.x - Value5.x) ** 2 + (Bloon.y - Value5.y) ** 2)
+                if Distance < ClosestDistance:
+                    ClosestDistance = Distance
+                    ClosestBloon = Bloon
+            if ClosestDistance <= 48:
+                Dart = sprites.create(img("""
+                        f f 
+                                            f f
+                    """),
+                    SpriteKind.projectile)
+                Dart.set_position(Value5.x, Value5.y)
+                Dart.follow(ClosestBloon, 200)
+game.on_update_interval(500, on_update_interval2)

@@ -1,0 +1,72 @@
+game.splash("Hurry try to collect all the coins before the timer runs out")
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Food, function on_on_overlap(sprite: Sprite, otherSprite: Sprite) {
+
+    count += 1
+    info.changeScoreBy(1)
+    otherSprite.destroy()
+    otherSprite.startEffect(effects.rings, 200)
+    if (count > 10 + level) {
+        level += 1
+        music.jumpUp.play()
+        startLevel()
+    } else {
+        music.baDing.play()
+    }
+})
+
+function startLevel() {
+    scene.setBackgroundColor(randint(1, 10))
+    count = 0
+    let index = 0
+    while (index <= 10 + level) {
+        food = sprites.create(img`
+            . . . . . 2 7 7 7 7 2 . . . . .
+            . . . . 2 5 5 5 5 5 5 2 . . . .
+            . . . 2 5 5 5 5 5 5 5 5 2 . . .
+            . . 2 5 5 5 2 2 2 2 5 5 5 2 . .
+            . 2 5 5 5 2 2 2 2 2 2 5 5 5 2 .
+            2 5 5 5 2 2 7 2 2 7 2 2 5 5 5 2
+            7 5 5 2 2 2 7 2 7 2 2 2 2 5 5 7
+            7 5 5 2 2 2 7 2 2 2 2 2 2 2 5 7
+            7 5 5 2 2 2 7 7 2 2 2 2 2 2 5 7
+            7 5 5 2 2 2 7 2 7 2 2 2 2 2 5 7
+            7 5 5 2 2 2 7 2 2 7 2 2 2 2 5 7
+            2 5 5 5 2 2 7 2 2 2 7 2 2 5 5 7
+            . 2 5 5 5 2 2 2 2 2 2 2 5 5 5 2
+            . . 2 5 5 5 2 2 2 2 2 5 5 5 2 .
+            . . . 2 5 5 5 5 5 5 5 5 5 2 . .
+            . . . . 2 7 7 7 7 7 7 7 2 . . .
+        `, SpriteKind.Food)
+        food.setPosition(randint(20, 130), randint(20, 100))
+        index += 1
+    }
+    player1.say("level" + ("" + level), 1000)
+    info.startCountdown(12)
+}
+
+let food: Sprite = null
+let count = 0
+let level = 0
+let player1: Sprite = null
+level = 1
+
+player1 = sprites.create(img`
+    . . . . f f f f . . . . .
+    . . f f f f f f f f . . .
+    . f f f f f f c f f f . .
+    f f f f f f c c f f f c .
+    f f f c f f f f f f f c .
+    c c c f f f e e f f c c .
+    f f f f f e e f f c c f .
+    f f f b f e e f b f f f .
+    . f 4 1 f 4 4 f 1 4 f . .
+    . f e 4 4 4 4 4 4 e f . .
+    . f f f e e e e f f f . .
+    f e f b 7 7 7 7 b f e f .
+    e 4 f 7 7 7 7 7 7 f 4 e .
+    e e f 6 6 6 6 6 6 f e e .
+    . . . f f f f f f . . . .
+    . . . f f . . f f . . . .
+`, SpriteKind.Player)
+controller.moveSprite(player1, 80, 80)
+startLevel()
